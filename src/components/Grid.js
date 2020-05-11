@@ -52,6 +52,11 @@ let GridContainer = styled.div`
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
   border: 2px solid black;
+
+  @media only screen and (max-width: 800px) {
+    width: 80vw;
+    height: 80vw;
+  }
 `
 
 let Square = styled.div`
@@ -67,10 +72,10 @@ let StyledCell = styled.input`
   border-top: ${props => props.i / 3 >= 1 ? "1px solid #aaa" : ""};
   border-left: ${props => props.i % 3 > 0 ? "1px solid #aaa" : ""};
   outline: none;
-  min-width: 0;
   width: unset;
-  min-height: 0;
   height: unset;
+  min-width: 0;
+  min-height: 0;
   text-align: center;
   font-size: ${props => parseInt(props.value) / 10 < 1 ? "2rem" : "0.5rem"};
   color: transparent;
@@ -94,6 +99,7 @@ class Cell extends React.Component {
 
   render() {
     return <StyledCell
+      type="number"
       key={this.props.i}
       i={this.props.i}
       value={this.props.value}
@@ -160,7 +166,6 @@ class Grid extends React.Component {
                 {
                   [...Array(9)].map((_,i) => {
                     return <Cell
-                      type="number"
                       square={square}
                       update={this.props.update}
                       key={i}
