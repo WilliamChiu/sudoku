@@ -68,7 +68,9 @@ let StyledCell = styled.input`
   border-left: ${props => props.i % 3 > 0 ? "1px solid #aaa" : ""};
   outline: none;
   min-width: 0;
+  width: unset;
   min-height: 0;
+  height: unset;
   text-align: center;
   font-size: ${props => parseInt(props.value) / 10 < 1 ? "2rem" : "0.5rem"};
   color: transparent;
@@ -118,7 +120,7 @@ class Grid extends React.Component {
     else {
       let generatedPuzzle = sudoku.makepuzzle()
       let board = generatedPuzzle.map(i => (i !== null) ? i + 1 : "")
-      let difficulty = sudoku.ratepuzzle(generatedPuzzle, 10)
+      let difficulty = sudoku.ratepuzzle(generatedPuzzle, 20)
       this.props.sendBoard(board, difficulty)
       this.setState({buttonPhase: 0})
     }
@@ -158,6 +160,7 @@ class Grid extends React.Component {
                 {
                   [...Array(9)].map((_,i) => {
                     return <Cell
+                      type="number"
                       square={square}
                       update={this.props.update}
                       key={i}
