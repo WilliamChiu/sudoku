@@ -82,8 +82,11 @@ let StyledCell = styled.input`
   text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "gray"};
   
   &::-webkit-inner-spin-button {
-    -moz-appearance: textfield;
     -webkit-appearance: none;
+  }
+
+  &[type=number] {
+    -moz-appearance:textfield;
   }
   
   &[type=number] {
