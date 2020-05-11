@@ -45,7 +45,7 @@ function withSocket(Wrapped) {
     }
 
     makeSocket() {
-      let socket = new WebSocket("wss://djs.chilly.blue/" + (window.location.pathname.slice(1) || 1))
+      let socket = new WebSocket("wss://djs.chilly.blue/sudoku/" + (window.location.pathname.slice(1) || 1))
       socket.addEventListener('message', message => {
         let parsed = JSON.parse(message.data)
         if (parsed.intent === "make move") {
