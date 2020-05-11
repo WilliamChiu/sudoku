@@ -135,13 +135,16 @@ class Grid extends React.Component {
           <ConnectionButton updated={this.props.updated}>
             {this.props.updated ? "Connected" : "Connecting"}
           </ConnectionButton>
-          <DifficultyIndicator>{this.props.difficulty}</DifficultyIndicator>
+          {
+            this.props.difficulty !== "" &&
+              <DifficultyIndicator>{"Difficulty: " + this.props.difficulty}</DifficultyIndicator>
+          }
           <div>
             {
-              this.props.difficulty !== "" ?
+              this.props.difficulty !== "" &&
                 <GameButton onClick={this.props.validate}>
                   Validate
-                </GameButton> : ""
+                </GameButton>
             }
             <GameButton onClick={this.handleNewGame} onMouseLeave={this.handleLeave}>
               {this.state.buttonPhase === 0 ? "New Game" : "Are you sure?"}

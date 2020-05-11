@@ -51,19 +51,23 @@ function withSocket(Wrapped) {
         if (parsed.intent === "make move") {
           let board = this.state.board
           board[entryToBoard(parsed.square, parsed.i)] = parsed.val
-          this.setState({board})
+          let incorrects = this.state.incorrects
+          incorrects[entryToBoard(parsed.square, parsed.i)] = 0
+          this.setState({board, incorrects})
         } else if (parsed.intent === "fetch board") {
           socket.send(JSON.stringify({
             intent: "send board",
             board: this.state.board,
             difficulty: this.state.difficulty,
-            originalBoard: this.state.originalBoard
+            originalBoard: this.state.originalBoard,
+            incorrects: this.state.incorrects
           }))
         } else if (parsed.intent === "send board") {
           this.setState({
             board: parsed.board,
             difficulty: parsed.difficulty,
             originalBoard: parsed.originalBoard,
+            incorrects: parsed.incorrects,
             updated: true
           })
         } else if (parsed.intent === "validate board") {
@@ -95,6 +99,8 @@ function withSocket(Wrapped) {
     update(square, i, val) {
       let board = this.state.board.slice()
       board[entryToBoard(square, i)] = val
+      let incorrects = this.state.incorrects.slice()
+      incorrects[entryToBoard(square, i)] = 0
       if (this.state.updated && this.state.socket && this.state.originalBoard[entryToBoard(square, i)] === "") {
         this.state.socket.send(JSON.stringify({
           intent: "make move",
@@ -102,7 +108,7 @@ function withSocket(Wrapped) {
           i,
           val
         }))
-        this.setState({board})
+        this.setState({board, incorrects})
       }
     }
 
@@ -114,7 +120,7 @@ function withSocket(Wrapped) {
           difficulty,
           originalBoard: board.slice()
         }))
-        this.setState({board, difficulty, originalBoard: board.slice()})
+        this.setState({board, difficulty, originalBoard: board.slice(), incorrects: new Array(81).fill("")})
       }
     }
 
@@ -126,7 +132,6 @@ function withSocket(Wrapped) {
         solution = solution.map(i => i === null ? "" : i + 1)
         let incorrects = this.state.board.map((e, i) => {
           if (e !== "" && parseInt(e) !== solution[i]) {
-            console.log("incorrect")
             return 1
           }
           return 0
