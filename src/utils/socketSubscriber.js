@@ -1,4 +1,5 @@
 import React from "react"
+import sudoku from "sudoku"
 
 let entryToBoard = (square, i) => {
   let row = Math.floor(i / 3)
@@ -17,11 +18,14 @@ function withSocket(Wrapped) {
       this.state = {
         board: new Array(81).fill(""),
         originalBoard: new Array(81).fill(""),
+        incorrects: new Array(81).fill(""),
+        difficulty: "",
         updated: false
       }
       this.makeSocket = this.makeSocket.bind(this)
       this.update = this.update.bind(this)
       this.sendBoard = this.sendBoard.bind(this)
+      this.validate = this.validate.bind(this)
     }
 
     async componentDidMount() {
@@ -46,19 +50,25 @@ function withSocket(Wrapped) {
         let parsed = JSON.parse(message.data)
         if (parsed.intent === "make move") {
           let board = this.state.board
-          board[entryToBoard(parsed.square, parsed.i)] = parsed.val[parsed.val.length - 1] || ""
+          board[entryToBoard(parsed.square, parsed.i)] = parsed.val
           this.setState({board})
         } else if (parsed.intent === "fetch board") {
           socket.send(JSON.stringify({
             intent: "send board",
             board: this.state.board,
+            difficulty: this.state.difficulty,
             originalBoard: this.state.originalBoard
           }))
         } else if (parsed.intent === "send board") {
           this.setState({
             board: parsed.board,
+            difficulty: parsed.difficulty,
             originalBoard: parsed.originalBoard,
             updated: true
+          })
+        } else if (parsed.intent === "validate board") {
+          this.setState({
+            incorrects: parsed.incorrects
           })
         }
       })
@@ -84,7 +94,7 @@ function withSocket(Wrapped) {
 
     update(square, i, val) {
       let board = this.state.board.slice()
-      board[entryToBoard(square, i)] = val[val.length - 1] || ""
+      board[entryToBoard(square, i)] = val
       if (this.state.updated && this.state.socket && this.state.originalBoard[entryToBoard(square, i)] === "") {
         this.state.socket.send(JSON.stringify({
           intent: "make move",
@@ -96,13 +106,36 @@ function withSocket(Wrapped) {
       }
     }
 
-    sendBoard(board) {
+    sendBoard(board, difficulty) {
       if (this.state.updated && this.state.socket) {
         this.state.socket.send(JSON.stringify({
           intent: "send board",
-          board
+          board,
+          difficulty,
+          originalBoard: board.slice()
         }))
-        this.setState({board, originalBoard: board.slice()})
+        this.setState({board, difficulty, originalBoard: board.slice()})
+      }
+    }
+
+    validate() {
+      if (this.state.updated && this.state.socket) {
+        let solution = sudoku.solvepuzzle(
+          this.state.originalBoard.map(i => i === "" ? null : parseInt(i - 1))
+        )
+        solution = solution.map(i => i === null ? "" : i + 1)
+        let incorrects = this.state.board.map((e, i) => {
+          if (e !== "" && parseInt(e) !== solution[i]) {
+            console.log("incorrect")
+            return 1
+          }
+          return 0
+        })
+        this.state.socket.send(JSON.stringify({
+          intent: "validate board",
+          incorrects
+        }))
+        this.setState({incorrects})
       }
     }
 
@@ -114,6 +147,9 @@ function withSocket(Wrapped) {
         entryToBoard={entryToBoard}
         updated={this.state.updated}
         sendBoard={this.sendBoard}
+        difficulty={this.state.difficulty}
+        validate={this.validate}
+        incorrects={this.state.incorrects}
       />
     }
   }

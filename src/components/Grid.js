@@ -23,6 +23,16 @@ let ConnectionButton = styled.div`
   background-color: ${props => props.updated ? "#00AA4A" : "#aaa"};
   display: inline-block;
   border-radius: 0.5rem;
+  cursor: pointer;
+`
+
+let DifficultyIndicator = styled.div`
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  color: black;
+  display: inline-block;
+  border-radius: 0.5rem;
 `
 
 let GameButton = styled.div`
@@ -31,6 +41,8 @@ let GameButton = styled.div`
   font-size: 0.8rem;
   color: black;
   display: inline-block;
+  cursor: pointer;
+  text-align: right;
 `
 
 let GridContainer = styled.div`
@@ -58,9 +70,9 @@ let StyledCell = styled.input`
   min-width: 0;
   min-height: 0;
   text-align: center;
-  font-size: 2rem;
+  font-size: ${props => parseInt(props.value) / 10 < 1 ? "2rem" : "0.5rem"};
   color: transparent;
-  text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : "gray"};
+  text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "gray"};
 
   &:focus {
     outline: none;
@@ -74,7 +86,8 @@ class Cell extends React.Component {
   }
 
   handleChange(i) {
-    if (!isNaN(i.target.value)) this.props.update(this.props.square, this.props.i, i.target.value)
+    if (!isNaN(i.target.value) && i.target.value !== "0")
+      this.props.update(this.props.square, this.props.i, i.target.value)
   }
 
   render() {
@@ -84,6 +97,7 @@ class Cell extends React.Component {
       value={this.props.value}
       onChange={this.handleChange}
       isOriginal={this.props.isOriginal}
+      isIncorrect={this.props.isIncorrect}
     />
   }
 }
@@ -95,20 +109,22 @@ class Grid extends React.Component {
       buttonPhase: 0
     }
     this.handleNewGame = this.handleNewGame.bind(this)
-    this.handleBlur = this.handleBlur.bind(this)
+    this.handleLeave = this.handleLeave.bind(this)
   }
 
   handleNewGame() {
     if (this.state.buttonPhase === 0)
       this.setState({buttonPhase: this.state.buttonPhase + 1})
     else {
-      let board = sudoku.makepuzzle().map(i => i ? i : "")
-      this.props.sendBoard(board)
+      let generatedPuzzle = sudoku.makepuzzle()
+      let board = generatedPuzzle.map(i => (i !== null) ? i + 1 : "")
+      let difficulty = sudoku.ratepuzzle(generatedPuzzle, 10)
+      this.props.sendBoard(board, difficulty)
       this.setState({buttonPhase: 0})
     }
   }
 
-  handleBlur() {
+  handleLeave() {
     this.setState({buttonPhase: 0})
   }
 
@@ -119,9 +135,18 @@ class Grid extends React.Component {
           <ConnectionButton updated={this.props.updated}>
             {this.props.updated ? "Connected" : "Connecting"}
           </ConnectionButton>
-          <GameButton onClick={this.handleNewGame} onBlur={this.handleBlur}>
-            {this.state.buttonPhase === 0 ? "New Game" : "Are you sure?"}
-          </GameButton>
+          <DifficultyIndicator>{this.props.difficulty}</DifficultyIndicator>
+          <div>
+            {
+              this.props.difficulty !== "" ?
+                <GameButton onClick={this.props.validate}>
+                  Validate
+                </GameButton> : ""
+            }
+            <GameButton onClick={this.handleNewGame} onMouseLeave={this.handleLeave}>
+              {this.state.buttonPhase === 0 ? "New Game" : "Are you sure?"}
+            </GameButton>
+          </div>
         </ButtonContainer>
         <GridContainer>
           {
@@ -136,6 +161,7 @@ class Grid extends React.Component {
                       i={i}
                       value={this.props.board[this.props.entryToBoard(square, i)]}
                       isOriginal={this.props.originalBoard[this.props.entryToBoard(square, i)] !== ""}
+                      isIncorrect={this.props.incorrects[this.props.entryToBoard(square, i)] === 1}
                     />
                   })
                 }
