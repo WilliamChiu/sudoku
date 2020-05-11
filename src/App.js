@@ -15,23 +15,26 @@ let AppContainer = styled.div`
   height: 100vh;
 
   h1 {
-    font-size: 5rem;
-    border-right: solid black 1rem;
-    padding: 1rem 2rem;
-    margin-right: 2rem;
+    font-size: 10vw;
+    border-right: solid black 2vw;
+    padding: 2vw 4vw;
+    margin-right: 4vw;
   }
 
   p {
+    font-size: 2vw;
     font-weight: 900;
+    margin-bottom: 0.5vw;
   }
 
   input {
-    border: solid black 2px;
-    padding: 0.2rem;
-    margin-right: 5rem;
+    font-size: 2vw;
+    border: solid black 0.2vw;
+    padding: 0.2vw;
+    margin-right: 5vw;
 
     &:focus {
-      border: dashed black 2px;
+      border: dashed black 0.2vw;
       outline: none;
     }
   }
