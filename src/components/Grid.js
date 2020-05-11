@@ -77,9 +77,18 @@ let StyledCell = styled.input`
   min-width: 0;
   min-height: 0;
   text-align: center;
-  font-size: ${props => parseInt(props.value) / 10 < 1 ? "2rem" : "0.5rem"};
+  font-size: ${props => parseInt(props.value) / 10 < 1 ? "min(4vw, 4vh)" : "min(1vw, 1vh)"};
   color: transparent;
   text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "gray"};
+  
+  &::-webkit-inner-spin-button {
+    -moz-appearance: textfield;
+    -webkit-appearance: none;
+  }
+  
+  &[type=number] {
+    margin: 0;
+  }
 
   &:focus {
     outline: none;
