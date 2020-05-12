@@ -50,16 +50,8 @@ let GridContainer = styled.div`
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
   border: 2px solid black;
-
-  @media (orientation: landscape) {
-    width: 80vh;
-    height: 80vh;
-  }
-
-  @media (orientation: portrait) {
-    width: 80vw;
-    height: 80vw;
-  }
+  width: 80vmin;
+  height: 80vmin;
 `
 
 let Square = styled.div`
@@ -68,6 +60,13 @@ let Square = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
+`
+
+let CellContainer = styled.div`
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
 `
 
 let StyledCell = styled.input`
@@ -82,14 +81,8 @@ let StyledCell = styled.input`
   text-align: center;
   color: transparent;
   text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "gray"};
-
-  @media (orientation: landscape) {
-    font-size: ${props => parseInt(props.value) / 10 < 1 ? "4vh" : "1vh"};
-  }
-
-  @media (orientation: portrait) {
-    font-size: ${props => parseInt(props.value) / 10 < 1 ? "4vw" : "1vw"};
-  }
+  font-size: ${props => parseInt(props.value) / 10 < 1 ? "4vmin" : "1vmin"};
+  background-color: transparent;
   
   &::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -108,27 +101,95 @@ let StyledCell = styled.input`
   }
 `
 
+let StyledNotes = styled.div`
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  z-index: -1;
+  text-align: center;
+  font-size: 3vmin;
+  line-height: 3vmin;
+  color: #aaa;
+  border: unset;
+  border-top: ${props => props.i / 3 >= 1 ? "1px solid #aaa" : ""};
+  border-left: ${props => props.i % 3 > 0 ? "1px solid #aaa" : ""};
+`
+
+class Notes extends React.Component {
+  render() {
+    return <StyledNotes i={this.props.i}>
+      {
+        [...Array(9)].map((_,i) => {
+          // I am so sorry for that nasty string manipulation
+        return <div key={i}>{this.props.value.includes(i+1+"") ? i+1 : ""}</div>
+        })
+      }
+    </StyledNotes>
+  }
+}
+
+
 class Cell extends React.Component {
   constructor(props) {
     super(props)
     this.handleChange = this.handleChange.bind(this)
+    this.handleKeyPress = this.handleKeyPress.bind(this)
   }
 
   handleChange(i) {
-    if (!isNaN(i.target.value) && i.target.value !== "0")
-      this.props.update(this.props.square, this.props.i, i.target.value)
+    /**
+     * If props.value is type string, we have a single entry for the square, or no entry at all.
+     * If it is an array, we are taking notes.
+     * Open to refactoring this gibberish.
+     */
+    if (typeof this.props.value === "string") {
+      if (i.target.value === "") this.props.update(this.props.square, this.props.i, "")
+      else if (i.target.value.length === 1) this.props.update(this.props.square, this.props.i, i.target.value)
+      else {
+        let val = [...new Set(i.target.value.split(""))]
+        this.props.update(this.props.square, this.props.i, val)
+      }
+    }
+    else {
+      if (this.props.value.includes(i.target.value) && this.props.value.length === 1)
+        this.props.update(this.props.square, this.props.i, i.target.value)
+      else if (this.props.value.includes(i.target.value)) {
+        let val = this.props.value.filter(e => e !== i.target.value)
+        this.props.update(this.props.square, this.props.i, val)
+      }
+      else {
+        let val = this.props.value.slice()
+        val.push(i.target.value)
+        this.props.update(this.props.square, this.props.i, val)
+      }
+    }
+  }
+
+  handleKeyPress(e) {
+    if (isNaN(e.key) || e.key === "0") e.preventDefault()
   }
 
   render() {
-    return <StyledCell
-      type="number"
-      key={this.props.i}
-      i={this.props.i}
-      value={this.props.value}
-      onChange={this.handleChange}
-      isOriginal={this.props.isOriginal}
-      isIncorrect={this.props.isIncorrect}
-    />
+    return <CellContainer>
+      { typeof this.props.value === "object" && <Notes
+          value={this.props.value}
+          i={this.props.i}
+        />
+      }
+      <StyledCell
+        type="number"
+        key={this.props.i}
+        i={this.props.i}
+        value={typeof this.props.value !== "object" ? this.props.value : ""}
+        onChange={this.handleChange}
+        onKeyPress={this.handleKeyPress}
+        isOriginal={this.props.isOriginal}
+        isIncorrect={this.props.isIncorrect}
+      />
+    </CellContainer>
   }
 }
 
