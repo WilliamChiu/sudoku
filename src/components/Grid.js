@@ -83,6 +83,10 @@ let StyledCell = styled.input`
   text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "gray"};
   font-size: ${props => parseInt(props.value) / 10 < 1 ? "4vmin" : "1vmin"};
   background-color: transparent;
+
+  &:focus {
+    background-color: rgba(100, 100, 100, 0.1);
+  }
   
   &::-webkit-inner-spin-button {
     -webkit-appearance: none;
