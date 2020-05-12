@@ -46,14 +46,17 @@ let GameButton = styled.div`
 `
 
 let GridContainer = styled.div`
-  width: min(80vw, 80vh);
-  height: min(80vw, 80vh);
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
   border: 2px solid black;
 
-  @media only screen and (max-width: 800px) {
+  @media (orientation: landscape) {
+    width: 80vh;
+    height: 80vh;
+  }
+
+  @media (orientation: portrait) {
     width: 80vw;
     height: 80vw;
   }
