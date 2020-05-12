@@ -80,9 +80,16 @@ let StyledCell = styled.input`
   min-width: 0;
   min-height: 0;
   text-align: center;
-  font-size: ${props => parseInt(props.value) / 10 < 1 ? "min(4vw, 4vh)" : "min(1vw, 1vh)"};
   color: transparent;
   text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "gray"};
+
+  @media (orientation: landscape) {
+    font-size: ${props => parseInt(props.value) / 10 < 1 ? "4vh" : "1vh"};
+  }
+
+  @media (orientation: portrait) {
+    font-size: ${props => parseInt(props.value) / 10 < 1 ? "4vw" : "1vw"};
+  }
   
   &::-webkit-inner-spin-button {
     -webkit-appearance: none;
