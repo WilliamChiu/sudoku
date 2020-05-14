@@ -16,36 +16,42 @@ let ButtonContainer = styled.div`
 `
 
 let ConnectionButton = styled.div`
-  margin-bottom: 0.5rem;
-  padding: 0.5rem;
+  margin-bottom: unset;
+  padding: 0.2rem 0.5rem;
   font-size: 0.8rem;
   color: white;
   background-color: ${props => props.updated ? "#00AA4A" : "#aaa"};
   display: inline-block;
   border-radius: 0.5rem;
-  cursor: pointer;
+  cursor: default;
   font-size: 2vmin;
 `
 
 let DifficultyIndicator = styled.div`
-  margin-bottom: 0.5rem;
-  padding: 0.5rem;
+  margin: 0.5rem;
+  padding: 0.25rem 0;
   font-size: 0.8rem;
   color: black;
   display: inline-block;
   border-radius: 0.5rem;
   font-size: 2vmin;
+  cursor: default;
 `
 
 let GameButton = styled.div`
-  margin-bottom: 0.5rem;
-  padding: 0.5rem;
+  margin: 0.5rem;
+  padding: 0.25rem 0;
   font-size: 0.8rem;
   color: black;
   display: inline-block;
   cursor: pointer;
   text-align: right;
   font-size: 2vmin;
+  border-bottom: 1px solid transparent;
+
+  &:hover {
+    border-bottom: 1px solid black;
+  }
 `
 
 let FileInput = styled.input`
@@ -87,9 +93,10 @@ let StyledCell = styled.input`
   min-height: 0;
   text-align: center;
   color: transparent;
-  text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "#b9d9eb"};
+  text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "#75aadb"};
   font-size: ${props => parseInt(props.value) / 10 < 1 ? "4vmin" : "1vmin"};
   background-color: ${props => props.highlight ? "rgba(200, 230, 255, 0.5)": "transparent"};
+  cursor: pointer;
   
   &:focus {
     background-color: rgba(100, 100, 100, 0.1);
@@ -266,10 +273,10 @@ class Grid extends React.Component {
   render() {
     return <AppContainer>
       <div>
+        <ConnectionButton updated={this.props.updated}>
+          {this.props.updated ? "Connected" : "Connecting"}
+        </ConnectionButton>
         <ButtonContainer>
-          <ConnectionButton updated={this.props.updated}>
-            {this.props.updated ? "Connected" : "Connecting"}
-          </ConnectionButton>
           {
             this.props.difficulty !== "" &&
               <DifficultyIndicator>{"Difficulty: " + this.props.difficulty}</DifficultyIndicator>
