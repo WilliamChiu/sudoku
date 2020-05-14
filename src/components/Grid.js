@@ -277,10 +277,7 @@ class Grid extends React.Component {
           {this.props.updated ? "Connected" : "Connecting"}
         </ConnectionButton>
         <ButtonContainer>
-          {
-            this.props.difficulty !== "" &&
-              <DifficultyIndicator>{"Difficulty: " + this.props.difficulty}</DifficultyIndicator>
-          }
+          <DifficultyIndicator>{this.props.difficulty !== "" ? "Difficulty: " + this.props.difficulty : ""}</DifficultyIndicator>
           <div>
             {
               this.props.difficulty !== "" &&
