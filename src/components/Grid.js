@@ -87,7 +87,7 @@ let StyledCell = styled.input`
   min-height: 0;
   text-align: center;
   color: transparent;
-  text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "gray"};
+  text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "#62A7EC"};
   font-size: ${props => parseInt(props.value) / 10 < 1 ? "4vmin" : "1vmin"};
   background-color: ${props => props.highlight ? "rgba(200, 230, 255, 0.5)": "transparent"};
   
