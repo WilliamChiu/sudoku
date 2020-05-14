@@ -1,5 +1,6 @@
 import React from "react"
 import sudoku from "sudoku"
+import { saveAs } from 'file-saver'
 
 let entryToBoard = (square, i) => {
   let row = Math.floor(i / 3)
@@ -26,6 +27,10 @@ function withSocket(Wrapped) {
       this.update = this.update.bind(this)
       this.sendBoard = this.sendBoard.bind(this)
       this.validate = this.validate.bind(this)
+      this.saveGame = this.saveGame.bind(this)
+      this.loadGame = this.loadGame.bind(this)
+      window.saveGame = this.saveGame // Hack, for now
+      window.loadGame = this.loadGame // Hack, for now
     }
 
     async componentDidMount() {
@@ -118,9 +123,10 @@ function withSocket(Wrapped) {
           intent: "send board",
           board,
           difficulty,
+          incorrects: this.state.incorrects,
           originalBoard: board.slice()
         }))
-        this.setState({board, difficulty, originalBoard: board.slice(), incorrects: new Array(81).fill("")})
+        this.setState({board, difficulty, originalBoard: board.slice()})
       }
     }
 
@@ -144,6 +150,23 @@ function withSocket(Wrapped) {
       }
     }
 
+    saveGame() {
+      let game = JSON.stringify(this.state)
+      var blob = new Blob([game], { type: "text/plain;charset=utf-8" });
+      saveAs(blob, "my.sudoku");
+    }
+
+    loadGame(text) {
+      let game = JSON.parse(text)
+      if (!game.difficulty) {
+        let generatedPuzzle = game.originalBoard.map(i => (i !== "") ? i - 1 : null)
+        let difficulty = sudoku.ratepuzzle(generatedPuzzle, 20)
+        game.difficulty = difficulty
+      }
+      this.setState(game)
+      this.makeSocket()
+    }
+
     render() {
       return <Wrapped
         board={this.state.board}
@@ -155,6 +178,8 @@ function withSocket(Wrapped) {
         difficulty={this.state.difficulty}
         validate={this.validate}
         incorrects={this.state.incorrects}
+        saveGame={this.saveGame}
+        loadGame={this.loadGame}
       />
     }
   }

@@ -24,6 +24,7 @@ let ConnectionButton = styled.div`
   display: inline-block;
   border-radius: 0.5rem;
   cursor: pointer;
+  font-size: 2vmin;
 `
 
 let DifficultyIndicator = styled.div`
@@ -33,6 +34,7 @@ let DifficultyIndicator = styled.div`
   color: black;
   display: inline-block;
   border-radius: 0.5rem;
+  font-size: 2vmin;
 `
 
 let GameButton = styled.div`
@@ -43,6 +45,11 @@ let GameButton = styled.div`
   display: inline-block;
   cursor: pointer;
   text-align: right;
+  font-size: 2vmin;
+`
+
+let FileInput = styled.input`
+  display: none;
 `
 
 let GridContainer = styled.div`
@@ -82,8 +89,8 @@ let StyledCell = styled.input`
   color: transparent;
   text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "gray"};
   font-size: ${props => parseInt(props.value) / 10 < 1 ? "4vmin" : "1vmin"};
-  background-color: transparent;
-
+  background-color: ${props => props.highlight ? "rgba(200, 230, 255, 0.5)": "transparent"};
+  
   &:focus {
     background-color: rgba(100, 100, 100, 0.1);
   }
@@ -174,6 +181,8 @@ class Cell extends React.Component {
 
   handleKeyPress(e) {
     if (isNaN(e.key) || e.key === "0") e.preventDefault()
+    if (e.key === "h") this.props.handleHighlight(this.props.square, this.props.i, "toggle")
+    else if (e.key === "c") this.props.handleHighlight(this.props.square, this.props.i, "clear")
   }
 
   render() {
@@ -192,6 +201,7 @@ class Cell extends React.Component {
         onKeyPress={this.handleKeyPress}
         isOriginal={this.props.isOriginal}
         isIncorrect={this.props.isIncorrect}
+        highlight={this.props.highlight}
       />
     </CellContainer>
   }
@@ -201,19 +211,38 @@ class Grid extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      buttonPhase: 0
+      buttonPhase: 0,
+      highlight: new Array(81).fill(0)
     }
     this.handleNewGame = this.handleNewGame.bind(this)
     this.handleLeave = this.handleLeave.bind(this)
+    this.handleHighlight = this.handleHighlight.bind(this)
+    this.fileInput = React.createRef()
+  }
+
+  componentDidMount() {
+    this.fileInput.current.addEventListener("change", () => {
+      let reader = new FileReader();
+      reader.addEventListener('load', (event) => {
+        this.props.loadGame(event.target.result)
+      });
+      reader.readAsText(this.fileInput.current.files[0])
+    }, false)
   }
 
   handleNewGame() {
     if (this.state.buttonPhase === 0)
       this.setState({buttonPhase: this.state.buttonPhase + 1})
     else {
-      let generatedPuzzle = sudoku.makepuzzle()
-      let board = generatedPuzzle.map(i => (i !== null) ? i + 1 : "")
-      let difficulty = sudoku.ratepuzzle(generatedPuzzle, 20)
+      let generatedPuzzle
+      let board
+      let difficulty
+      while (true) {
+        generatedPuzzle = sudoku.makepuzzle()
+        board = generatedPuzzle.map(i => (i !== null) ? i + 1 : "")
+        difficulty = sudoku.ratepuzzle(generatedPuzzle, 20)
+        if (!window.minDiff || difficulty > window.minDiff) break
+      }
       this.props.sendBoard(board, difficulty)
       this.setState({buttonPhase: 0})
     }
@@ -221,6 +250,17 @@ class Grid extends React.Component {
 
   handleLeave() {
     this.setState({buttonPhase: 0})
+  }
+
+  handleHighlight(square, i, action) {
+    if (action === "clear") {
+      this.setState({highlight: new Array(81).fill(0)})
+    }
+    else if (action === "toggle") {
+      let highlight = this.state.highlight.slice()
+      highlight[this.props.entryToBoard(square, i)] = !highlight[this.props.entryToBoard(square, i)]
+      this.setState({highlight})
+    }
   }
 
   render() {
@@ -241,8 +281,20 @@ class Grid extends React.Component {
                   Validate
                 </GameButton>
             }
+            {
+              this.props.difficulty !== "" &&
+                <GameButton onClick={this.props.saveGame}>
+                  Save
+                </GameButton>
+            }
+            <label>
+              <GameButton>
+                Load
+              </GameButton>
+              <FileInput type="file" ref={this.fileInput}/>
+            </label>
             <GameButton onClick={this.handleNewGame} onMouseLeave={this.handleLeave}>
-              {this.state.buttonPhase === 0 ? "New Game" : "Are you sure?"}
+              {this.state.buttonPhase === 0 ? "New" : "Are you sure?"}
             </GameButton>
           </div>
         </ButtonContainer>
@@ -260,6 +312,8 @@ class Grid extends React.Component {
                       value={this.props.board[this.props.entryToBoard(square, i)]}
                       isOriginal={this.props.originalBoard[this.props.entryToBoard(square, i)] !== ""}
                       isIncorrect={this.props.incorrects[this.props.entryToBoard(square, i)] === 1}
+                      highlight={this.state.highlight[this.props.entryToBoard(square, i)]}
+                      handleHighlight={this.handleHighlight}
                     />
                   })
                 }
