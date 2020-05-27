@@ -1,6 +1,11 @@
 import React from 'react'
-import styled from "styled-components"
+import styled, { ThemeProvider } from "styled-components"
 import withSocket from "../utils/socketSubscriber"
+import withSettings from "../utils/settingsSubscriber"
+import Cell from "./Cell"
+import Settings from "./Settings"
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCog } from '@fortawesome/free-solid-svg-icons'
 import sudoku from "sudoku"
 
 let AppContainer = styled.div`
@@ -8,6 +13,7 @@ let AppContainer = styled.div`
   justify-content: center;
   align-items: center;
   height: 100vh;
+  background-color: ${props => props.theme.background};
 `
 
 let ButtonContainer = styled.div`
@@ -19,8 +25,8 @@ let ConnectionButton = styled.div`
   margin-bottom: unset;
   padding: 0.2rem 0.5rem;
   font-size: 0.8rem;
-  color: white;
-  background-color: ${props => props.updated ? "#00AA4A" : "#aaa"};
+  color: ${props => props.theme.buttonColor};
+  background-color: ${props => props.updated ? props.theme.connectedColor : props.theme.connectingColor};
   display: inline-block;
   border-radius: 0.5rem;
   cursor: default;
@@ -31,7 +37,7 @@ let DifficultyIndicator = styled.div`
   margin: 0.5rem;
   padding: 0.25rem 0;
   font-size: 0.8rem;
-  color: black;
+  color: ${props => props.theme.textColor};
   display: inline-block;
   border-radius: 0.5rem;
   font-size: 2vmin;
@@ -41,8 +47,7 @@ let DifficultyIndicator = styled.div`
 let GameButton = styled.div`
   margin: 0.5rem;
   padding: 0.25rem 0;
-  font-size: 0.8rem;
-  color: black;
+  color: ${props => props.theme.textColor};
   display: inline-block;
   cursor: pointer;
   text-align: right;
@@ -50,8 +55,18 @@ let GameButton = styled.div`
   border-bottom: 1px solid transparent;
 
   &:hover {
-    border-bottom: 1px solid black;
+    border-bottom: 1px solid ${props => props.theme.textColor};
   }
+`
+
+let StyledCogButton = styled.div`
+  margin: 0 0.5rem;
+  padding: 0.25rem 0;
+  color: ${props => props.theme.textColor};
+  display: inline-block;
+  cursor: pointer;
+  text-align: right;
+  font-size: 2.5vmin;
 `
 
 let FileInput = styled.input`
@@ -60,158 +75,66 @@ let FileInput = styled.input`
 
 let GridContainer = styled.div`
   display: grid;
+  background-color: ${props => props.theme.squareGapColor};
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
-  border: 2px solid black;
+  grid-row-gap: ${props => props.theme.squareGap};
+  grid-column-gap: ${props => props.theme.squareGap};
+  border: ${props => props.theme.bigBorder};
+  box-sizing: border-box;
   width: 80vmin;
   height: 80vmin;
 `
 
 let Square = styled.div`
-  border-top: ${props => props.i / 3 >= 1 ? "2px solid black" : ""};
-  border-left: ${props => props.i % 3 > 0 ? "2px solid black" : ""};
   display: grid;
+  background-color: ${props => props.theme.cellGapColor};
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
+  grid-row-gap: ${props => props.theme.cellGap};
+  grid-column-gap: ${props => props.theme.cellGap};
 `
 
-let CellContainer = styled.div`
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
-`
-
-let StyledCell = styled.input`
-  border: unset;
-  border-top: ${props => props.i / 3 >= 1 ? "1px solid #aaa" : ""};
-  border-left: ${props => props.i % 3 > 0 ? "1px solid #aaa" : ""};
-  outline: none;
-  width: unset;
-  height: unset;
-  min-width: 0;
-  min-height: 0;
-  text-align: center;
-  color: transparent;
-  text-shadow: 0 0 0 ${props => props.isOriginal ? "black" : props.isIncorrect ? "red" : "#75aadb"};
-  font-size: ${props => parseInt(props.value) / 10 < 1 ? "4vmin" : "1vmin"};
-  background-color: ${props => props.highlight ? "rgba(200, 230, 255, 0.5)": "transparent"};
-  cursor: pointer;
-  
-  &:focus {
-    background-color: rgba(100, 100, 100, 0.1);
-  }
-  
-  &::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-  }
-
-  &[type=number] {
-    -moz-appearance:textfield;
-  }
-  
-  &[type=number] {
-    margin: 0;
-  }
-
-  &:focus {
-    outline: none;
-  }
-`
-
-let StyledNotes = styled.div`
-  position: absolute;
-  height: 100%;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr;
-  z-index: -1;
-  text-align: center;
-  font-size: 3vmin;
-  line-height: 3vmin;
-  color: #aaa;
-  border: unset;
-  border-top: ${props => props.i / 3 >= 1 ? "1px solid #aaa" : ""};
-  border-left: ${props => props.i % 3 > 0 ? "1px solid #aaa" : ""};
-`
-
-class Notes extends React.Component {
-  render() {
-    return <StyledNotes i={this.props.i}>
-      {
-        [...Array(9)].map((_,i) => {
-          // I am so sorry for that nasty string manipulation
-        return <div key={i}>{this.props.value.includes(i+1+"") ? i+1 : ""}</div>
-        })
-      }
-    </StyledNotes>
-  }
+let theme = {
+  textColor: "black",
+  buttonColor: "white",
+  connectedColor: "#00AA4A",
+  connectingColor: "#aaa",
+  background: "white",
+  cellBackground: "white",
+  squareGap: "2px",
+  cellGap: "1px",
+  squareGapColor: "black",
+  cellGapColor: "#aaa",
+  bigBorder: "2px solid black",
+  smallBorder: "1px solid #aaa",
+  cellFocus: "rgba(100, 100, 100, 0.1)",
+  noteColor: "#aaa",
+  givenColor: "black",
+  incorrectColor: "red",
+  userColor: "#75aadb",
+  highlightColor: "rgba(200, 230, 255, 0.5)",
 }
 
-
-class Cell extends React.Component {
-  constructor(props) {
-    super(props)
-    this.handleChange = this.handleChange.bind(this)
-    this.handleKeyPress = this.handleKeyPress.bind(this)
-  }
-
-  handleChange(i) {
-    /**
-     * If props.value is type string, we have a single entry for the square, or no entry at all.
-     * If it is an array, we are taking notes.
-     * Open to refactoring this gibberish.
-     */
-    if (typeof this.props.value === "string") {
-      if (i.target.value === "") this.props.update(this.props.square, this.props.i, "")
-      else if (i.target.value.length === 1) this.props.update(this.props.square, this.props.i, i.target.value)
-      else {
-        let val = [...new Set(i.target.value.split(""))]
-        this.props.update(this.props.square, this.props.i, val)
-      }
-    }
-    else {
-      if (this.props.value.includes(i.target.value) && this.props.value.length === 1)
-        this.props.update(this.props.square, this.props.i, i.target.value)
-      else if (this.props.value.includes(i.target.value)) {
-        let val = this.props.value.filter(e => e !== i.target.value)
-        this.props.update(this.props.square, this.props.i, val)
-      }
-      else {
-        let val = this.props.value.slice()
-        val.push(i.target.value)
-        this.props.update(this.props.square, this.props.i, val)
-      }
-    }
-  }
-
-  handleKeyPress(e) {
-    if (isNaN(e.key) || e.key === "0") e.preventDefault()
-    if (e.key === "h") this.props.handleHighlight(this.props.square, this.props.i, "toggle")
-    else if (e.key === "c") this.props.handleHighlight(this.props.square, this.props.i, "clear")
-  }
-
-  render() {
-    return <CellContainer>
-      { typeof this.props.value === "object" && <Notes
-          value={this.props.value}
-          i={this.props.i}
-        />
-      }
-      <StyledCell
-        type="number"
-        key={this.props.i}
-        i={this.props.i}
-        value={typeof this.props.value !== "object" ? this.props.value : ""}
-        onChange={this.handleChange}
-        onKeyPress={this.handleKeyPress}
-        isOriginal={this.props.isOriginal}
-        isIncorrect={this.props.isIncorrect}
-        highlight={this.props.highlight}
-      />
-    </CellContainer>
-  }
+theme = {
+  textColor: "#ddd",
+  buttonColor: "#222",
+  connectedColor: "#62b586",
+  connectingColor: "#aaa",
+  background: "#222",
+  cellBackground: "#444",
+  squareGap: "6px",
+  cellGap: "3px",
+  squareGapColor: "#222",
+  cellGapColor: "#222",
+  bigBorder: "6px solid #222",
+  smallBorder: "3px solid #222",
+  cellFocus: "rgba(200, 200, 200, 0.1)",
+  noteColor: "#999",
+  givenColor: "#ddd",
+  incorrectColor: "#d88",
+  userColor: "#75aadb",
+  highlightColor: "rgba(200, 230, 255, 0.3)",
 }
 
 class Grid extends React.Component {
@@ -219,10 +142,15 @@ class Grid extends React.Component {
     super(props)
     this.state = {
       buttonPhase: 0,
+      hoverSettings: false,
+      settingsPhase: false,
       highlight: new Array(81).fill(0)
     }
     this.handleNewGame = this.handleNewGame.bind(this)
     this.handleLeave = this.handleLeave.bind(this)
+    this.handleSettingsHover = this.handleSettingsHover.bind(this)
+    this.handleSettingsLeave = this.handleSettingsLeave.bind(this)
+    this.handleSettingsClick = this.handleSettingsClick.bind(this)
     this.handleHighlight = this.handleHighlight.bind(this)
     this.fileInput = React.createRef()
   }
@@ -255,8 +183,21 @@ class Grid extends React.Component {
     }
   }
 
+  
   handleLeave() {
     this.setState({buttonPhase: 0})
+  }
+  
+  handleSettingsHover() {
+    this.setState({hoverSettings: true})
+  }
+
+  handleSettingsLeave() {
+    this.setState({hoverSettings: false})
+  }
+
+  handleSettingsClick() {
+    this.setState(pState => ({settingsPhase: !pState.settingsPhase}))
   }
 
   handleHighlight(square, i, action) {
@@ -271,63 +212,75 @@ class Grid extends React.Component {
   }
 
   render() {
-    return <AppContainer>
-      <div>
-        <ConnectionButton updated={this.props.updated}>
-          {this.props.updated ? "Connected" : "Connecting"}
-        </ConnectionButton>
-        <ButtonContainer>
-          <DifficultyIndicator>{this.props.difficulty !== "" ? "Difficulty: " + this.props.difficulty : ""}</DifficultyIndicator>
-          <div>
-            {
-              this.props.difficulty !== "" &&
-                <GameButton onClick={this.props.validate}>
-                  Validate
+    console.log(this.props)
+    return <ThemeProvider theme={theme}>
+      <AppContainer>
+        <div>
+          <ConnectionButton updated={this.props.updated}>
+            {this.props.updated ? "Connected" : "Connecting"}
+          </ConnectionButton>
+          <ButtonContainer>
+            <DifficultyIndicator>{this.props.difficulty !== "" ? "Difficulty: " + this.props.difficulty : ""}</DifficultyIndicator>
+            <div>
+              {
+                this.props.difficulty !== "" &&
+                  <GameButton onClick={this.props.validate}>
+                    Validate
+                  </GameButton>
+              }
+              {
+                this.props.difficulty !== "" &&
+                  <GameButton onClick={this.props.saveGame}>
+                    Save
+                  </GameButton>
+              }
+              <label>
+                <GameButton>
+                  Load
                 </GameButton>
-            }
-            {
-              this.props.difficulty !== "" &&
-                <GameButton onClick={this.props.saveGame}>
-                  Save
-                </GameButton>
-            }
-            <label>
-              <GameButton>
-                Load
+                <FileInput type="file" ref={this.fileInput}/>
+              </label>
+              <GameButton onClick={this.handleNewGame} onMouseLeave={this.handleLeave}>
+                {this.state.buttonPhase === 0 ? "New" : "Are you sure?"}
               </GameButton>
-              <FileInput type="file" ref={this.fileInput}/>
-            </label>
-            <GameButton onClick={this.handleNewGame} onMouseLeave={this.handleLeave}>
-              {this.state.buttonPhase === 0 ? "New" : "Are you sure?"}
-            </GameButton>
-          </div>
-        </ButtonContainer>
-        <GridContainer>
+              <StyledCogButton
+                onClick={this.handleSettingsClick}
+                onMouseEnter={this.handleSettingsHover}
+                onMouseLeave={this.handleSettingsLeave}
+              >
+                <FontAwesomeIcon icon={faCog} spin={this.state.hoverSettings}/>
+              </StyledCogButton>
+            </div>
+          </ButtonContainer>
           {
-            [...Array(9)].map((_,square) => {
-              return <Square key={square} i={square}>
-                {
-                  [...Array(9)].map((_,i) => {
-                    return <Cell
-                      square={square}
-                      update={this.props.update}
-                      key={i}
-                      i={i}
-                      value={this.props.board[this.props.entryToBoard(square, i)]}
-                      isOriginal={this.props.originalBoard[this.props.entryToBoard(square, i)] !== ""}
-                      isIncorrect={this.props.incorrects[this.props.entryToBoard(square, i)] === 1}
-                      highlight={this.state.highlight[this.props.entryToBoard(square, i)]}
-                      handleHighlight={this.handleHighlight}
-                    />
-                  })
-                }
-              </Square>
-            })
+            !this.state.settingsPhase ? <GridContainer>
+              {
+                [...Array(9)].map((_,square) => {
+                  return <Square key={square} i={square}>
+                    {
+                      [...Array(9)].map((_,i) => {
+                        return <Cell
+                          square={square}
+                          update={this.props.update}
+                          key={i}
+                          i={i}
+                          value={this.props.board[this.props.entryToBoard(square, i)]}
+                          isOriginal={this.props.originalBoard[this.props.entryToBoard(square, i)] !== ""}
+                          isIncorrect={this.props.incorrects[this.props.entryToBoard(square, i)] === 1}
+                          highlight={this.state.highlight[this.props.entryToBoard(square, i)]}
+                          handleHighlight={this.handleHighlight}
+                        />
+                      })
+                    }
+                  </Square>
+                })
+              }
+            </GridContainer> : <Settings/>
           }
-        </GridContainer>
-      </div>
-    </AppContainer>
+        </div>
+      </AppContainer>
+    </ThemeProvider>
   }
 }
 
-export default withSocket(Grid)
+export default withSettings(withSocket(Grid))

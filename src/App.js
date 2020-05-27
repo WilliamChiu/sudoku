@@ -7,6 +7,7 @@ import {
   Redirect
 } from "react-router-dom";
 import styled from "styled-components"
+import SettingsProvider from "./components/SettingsProvider"
 
 let AppContainer = styled.div`
   display: flex;
@@ -64,25 +65,27 @@ class App extends React.Component {
   }
 
   render() {
-    return <Router>
-      {this.state.redirect && <Redirect push to={"/" + this.state.lobby} />}
-      <div>
-        <Switch>
-          <Route path="/" exact={true}>
-            <AppContainer>
-              <h1>Sudoku</h1>
-              <div>
-                <p>Join a lobby</p>
-                <StyledLobbyInput onInput={this.handleInput} onKeyPress={this.handleKeyPress}/>
-              </div>
-            </AppContainer>
-          </Route>
-          <Route path="/*">
-            <Grid/>
-          </Route>
-        </Switch>
-      </div>
-    </Router>
+    return <SettingsProvider>
+      <Router>
+        {this.state.redirect && <Redirect push to={"/" + this.state.lobby} />}
+        <div>
+          <Switch>
+            <Route path="/" exact={true}>
+              <AppContainer>
+                <h1>Sudoku</h1>
+                <div>
+                  <p>Join a lobby</p>
+                  <StyledLobbyInput onInput={this.handleInput} onKeyPress={this.handleKeyPress}/>
+                </div>
+              </AppContainer>
+            </Route>
+            <Route path="/*">
+              <Grid/>
+            </Route>
+          </Switch>
+        </div>
+      </Router>
+    </SettingsProvider>
   }
 }
 
