@@ -1,6 +1,7 @@
 import React from 'react'
 import styled from "styled-components"
 import withSocket from "../utils/socketSubscriber"
+import Chat from "./Chat"
 import sudoku from "sudoku"
 
 let AppContainer = styled.div`
@@ -8,6 +9,11 @@ let AppContainer = styled.div`
   justify-content: center;
   align-items: center;
   height: 100vh;
+`
+
+let GridChatContainer = styled.div`
+  display: flex;
+  align-items: flex-end;
 `
 
 let ButtonContainer = styled.div`
@@ -65,6 +71,7 @@ let GridContainer = styled.div`
   border: 2px solid black;
   width: 80vmin;
   height: 80vmin;
+  margin-right: 1rem;
 `
 
 let Square = styled.div`
@@ -272,60 +279,63 @@ class Grid extends React.Component {
 
   render() {
     return <AppContainer>
-      <div>
-        <ConnectionButton updated={this.props.updated}>
-          {this.props.updated ? "Connected" : "Connecting"}
-        </ConnectionButton>
-        <ButtonContainer>
-          <DifficultyIndicator>{this.props.difficulty !== "" ? "Difficulty: " + this.props.difficulty : ""}</DifficultyIndicator>
-          <div>
-            {
-              this.props.difficulty !== "" &&
-                <GameButton onClick={this.props.validate}>
-                  Validate
+      <GridChatContainer>
+        <div>
+          <ConnectionButton updated={this.props.updated}>
+            {this.props.updated ? "Connected" : "Connecting"}
+          </ConnectionButton>
+          <ButtonContainer>
+            <DifficultyIndicator>{this.props.difficulty !== "" ? "Difficulty: " + this.props.difficulty : ""}</DifficultyIndicator>
+            <div>
+              {
+                this.props.difficulty !== "" &&
+                  <GameButton onClick={this.props.validate}>
+                    Validate
+                  </GameButton>
+              }
+              {
+                this.props.difficulty !== "" &&
+                  <GameButton onClick={this.props.saveGame}>
+                    Save
+                  </GameButton>
+              }
+              <label>
+                <GameButton>
+                  Load
                 </GameButton>
-            }
-            {
-              this.props.difficulty !== "" &&
-                <GameButton onClick={this.props.saveGame}>
-                  Save
-                </GameButton>
-            }
-            <label>
-              <GameButton>
-                Load
+                <FileInput type="file" ref={this.fileInput}/>
+              </label>
+              <GameButton onClick={this.handleNewGame} onMouseLeave={this.handleLeave}>
+                {this.state.buttonPhase === 0 ? "New" : "Are you sure?"}
               </GameButton>
-              <FileInput type="file" ref={this.fileInput}/>
-            </label>
-            <GameButton onClick={this.handleNewGame} onMouseLeave={this.handleLeave}>
-              {this.state.buttonPhase === 0 ? "New" : "Are you sure?"}
-            </GameButton>
-          </div>
-        </ButtonContainer>
-        <GridContainer>
-          {
-            [...Array(9)].map((_,square) => {
-              return <Square key={square} i={square}>
-                {
-                  [...Array(9)].map((_,i) => {
-                    return <Cell
-                      square={square}
-                      update={this.props.update}
-                      key={i}
-                      i={i}
-                      value={this.props.board[this.props.entryToBoard(square, i)]}
-                      isOriginal={this.props.originalBoard[this.props.entryToBoard(square, i)] !== ""}
-                      isIncorrect={this.props.incorrects[this.props.entryToBoard(square, i)] === 1}
-                      highlight={this.state.highlight[this.props.entryToBoard(square, i)]}
-                      handleHighlight={this.handleHighlight}
-                    />
-                  })
-                }
-              </Square>
-            })
-          }
-        </GridContainer>
-      </div>
+            </div>
+          </ButtonContainer>
+          <GridContainer>
+            {
+              [...Array(9)].map((_,square) => {
+                return <Square key={square} i={square}>
+                  {
+                    [...Array(9)].map((_,i) => {
+                      return <Cell
+                        square={square}
+                        update={this.props.update}
+                        key={i}
+                        i={i}
+                        value={this.props.board[this.props.entryToBoard(square, i)]}
+                        isOriginal={this.props.originalBoard[this.props.entryToBoard(square, i)] !== ""}
+                        isIncorrect={this.props.incorrects[this.props.entryToBoard(square, i)] === 1}
+                        highlight={this.state.highlight[this.props.entryToBoard(square, i)]}
+                        handleHighlight={this.handleHighlight}
+                      />
+                    })
+                  }
+                </Square>
+              })
+            }
+          </GridContainer>
+        </div>
+        <Chat/>
+      </GridChatContainer>
     </AppContainer>
   }
 }
