@@ -56,7 +56,10 @@ class App extends React.Component {
   }
 
   handleInput(e) {
-    this.setState({lobby: e.target.value})
+    this.setState({
+      lobby: e.target.value,
+      redirect: false
+    })
   }
 
   handleKeyPress(e) {
