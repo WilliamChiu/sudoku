@@ -12,6 +12,81 @@ let entryToBoard = (square, i) => {
   return col * 9 + row
 }
 
+let socket = null // Yeeep, this is yikes.
+let components = new Set()
+
+function checkSocket() {
+  if (document.visibilityState === 'visible') {
+    console.log("Checking socket health...")
+    if (socket && socket.readyState !== WebSocket.OPEN && socket.readyState !== WebSocket.CONNECTING) {
+      console.log("Remounting, websocket was ", socket.readyState)
+      socket.close()
+      makeSocket()
+    }
+  }
+}
+
+function socketOnMessage(message) {
+  let parsed = JSON.parse(message.data)
+  if (parsed.intent === "make move") {
+    components.forEach(c => {
+      let board = c.state.board
+      board[entryToBoard(parsed.square, parsed.i)] = parsed.val
+      let incorrects = c.state.incorrects
+      incorrects[entryToBoard(parsed.square, parsed.i)] = 0
+      c.setState({board, incorrects})
+    })
+  } else if (parsed.intent === "fetch board") {
+    for (let c of components) {
+      socket.send(JSON.stringify({
+        intent: "send board",
+        board: c.state.board,
+        difficulty: c.state.difficulty,
+        originalBoard: c.state.originalBoard,
+        incorrects: c.state.incorrects
+      }))
+      break // We only want 1 socket.send per-client, but each client can have multiple wrapped components
+    }
+  } else if (parsed.intent === "send board") {
+    components.forEach(c => c.setState({
+      board: parsed.board,
+      difficulty: parsed.difficulty,
+      originalBoard: parsed.originalBoard,
+      incorrects: parsed.incorrects,
+      updated: true
+    }))
+  } else if (parsed.intent === "validate board") {
+    components.forEach(c => c.setState({
+      incorrects: parsed.incorrects
+    }))
+  }
+}
+
+function socketOnOpen() {
+  setTimeout(() => {
+    components.forEach(c => {
+      if (!c.state.updated) {
+        c.setState({ updated: true })
+        console.log("No board received...")
+      }
+    })
+  }, 3000)
+  console.log("Fetching board...")
+  socket.send(JSON.stringify({intent: "fetch board"}))
+  components.forEach(c => c.setState({
+    socket
+  }))
+}
+
+function makeSocket() {
+  socket = new WebSocket("wss://djs.chilly.blue/sudoku/" + (window.location.pathname.slice(1) || 1))
+  document.addEventListener("visibilitychange", checkSocket)
+  socket.addEventListener('message', socketOnMessage)
+  socket.addEventListener('open', socketOnOpen)
+}
+
+makeSocket()
+
 function withSocket(Wrapped) {
   return class extends React.Component {
     constructor(props) {
@@ -23,82 +98,19 @@ function withSocket(Wrapped) {
         difficulty: "",
         updated: false
       }
-      this.makeSocket = this.makeSocket.bind(this)
       this.update = this.update.bind(this)
       this.sendBoard = this.sendBoard.bind(this)
       this.validate = this.validate.bind(this)
       this.saveGame = this.saveGame.bind(this)
       this.loadGame = this.loadGame.bind(this)
-      window.saveGame = this.saveGame // Hack, for now
-      window.loadGame = this.loadGame // Hack, for now
     }
 
     async componentDidMount() {
-      console.log("Mounting...")
-      this.makeSocket()
-
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === 'visible') {
-          console.log("Checking socket health...")
-          if (this.state.socket && this.state.socket.readyState !== WebSocket.OPEN && this.state.socket.readyState !== WebSocket.CONNECTING) {
-            console.log("Remounting, websocket was ", this.state.socket.readyState)
-            this.state.socket.close()
-            this.makeSocket()
-          }
-        }
-      })
-    }
-
-    makeSocket() {
-      let socket = new WebSocket("wss://djs.chilly.blue/sudoku/" + (window.location.pathname.slice(1) || 1))
-      socket.addEventListener('message', message => {
-        let parsed = JSON.parse(message.data)
-        if (parsed.intent === "make move") {
-          let board = this.state.board
-          board[entryToBoard(parsed.square, parsed.i)] = parsed.val
-          let incorrects = this.state.incorrects
-          incorrects[entryToBoard(parsed.square, parsed.i)] = 0
-          this.setState({board, incorrects})
-        } else if (parsed.intent === "fetch board") {
-          socket.send(JSON.stringify({
-            intent: "send board",
-            board: this.state.board,
-            difficulty: this.state.difficulty,
-            originalBoard: this.state.originalBoard,
-            incorrects: this.state.incorrects
-          }))
-        } else if (parsed.intent === "send board") {
-          this.setState({
-            board: parsed.board,
-            difficulty: parsed.difficulty,
-            originalBoard: parsed.originalBoard,
-            incorrects: parsed.incorrects,
-            updated: true
-          })
-        } else if (parsed.intent === "validate board") {
-          this.setState({
-            incorrects: parsed.incorrects
-          })
-        }
-      })
-      socket.addEventListener('open', () => {
-        setTimeout(() => {
-          if (!this.state.updated) {
-            this.setState({ updated: true })
-            console.log("No board received...")
-          }
-        }, 3000)
-        console.log("Fetching board...")
-        socket.send(JSON.stringify({intent: "fetch board"}))
-        this.setState({
-          socket
-        })
-      })
-      return socket
+      this.setState({i: components.length}, () => components.add(this))
     }
 
     componentWillUnmount() {
-      this.state.socket.close()
+      components.delete(this)
     }
 
     update(square, i, val) {
@@ -106,8 +118,8 @@ function withSocket(Wrapped) {
       board[entryToBoard(square, i)] = val
       let incorrects = this.state.incorrects.slice()
       incorrects[entryToBoard(square, i)] = 0
-      if (this.state.updated && this.state.socket && this.state.originalBoard[entryToBoard(square, i)] === "") {
-        this.state.socket.send(JSON.stringify({
+      if (this.state.updated && socket && this.state.originalBoard[entryToBoard(square, i)] === "") {
+        socket.send(JSON.stringify({
           intent: "make move",
           square,
           i,
@@ -118,8 +130,8 @@ function withSocket(Wrapped) {
     }
 
     sendBoard(board, difficulty) {
-      if (this.state.updated && this.state.socket) {
-        this.state.socket.send(JSON.stringify({
+      if (this.state.updated && socket) {
+        socket.send(JSON.stringify({
           intent: "send board",
           board,
           difficulty,
@@ -131,7 +143,7 @@ function withSocket(Wrapped) {
     }
 
     validate() {
-      if (this.state.updated && this.state.socket) {
+      if (this.state.updated && socket) {
         let solution = sudoku.solvepuzzle(
           this.state.originalBoard.map(i => i === "" ? null : parseInt(i - 1))
         )
@@ -142,7 +154,7 @@ function withSocket(Wrapped) {
           }
           return 0
         })
-        this.state.socket.send(JSON.stringify({
+        socket.send(JSON.stringify({
           intent: "validate board",
           incorrects
         }))
