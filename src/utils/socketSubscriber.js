@@ -106,10 +106,12 @@ function withSocket(Wrapped) {
     }
 
     async componentDidMount() {
+      console.log("Wrapping component...")
       this.setState({i: components.length}, () => components.add(this))
     }
 
     componentWillUnmount() {
+      console.log("Unwrapping component...")
       components.delete(this)
     }
 
