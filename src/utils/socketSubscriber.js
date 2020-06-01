@@ -105,7 +105,7 @@ function withSocket(Wrapped) {
       this.loadGame = this.loadGame.bind(this)
     }
 
-    async componentDidMount() {
+    componentDidMount() {
       console.log("Wrapping component...")
       this.setState({i: components.length}, () => components.add(this))
     }
