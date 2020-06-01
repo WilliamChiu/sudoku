@@ -12,7 +12,7 @@ let entryToBoard = (square, i) => {
   return col * 9 + row
 }
 
-let socket = null // Yeeep, this is yikes.
+let socket = makeSocket()
 let components = new Set()
 
 function checkSocket() {
@@ -21,7 +21,7 @@ function checkSocket() {
     if (socket && socket.readyState !== WebSocket.OPEN && socket.readyState !== WebSocket.CONNECTING) {
       console.log("Remounting, websocket was ", socket.readyState)
       socket.close()
-      makeSocket()
+      socket = makeSocket()
     }
   }
 }
@@ -79,13 +79,12 @@ function socketOnOpen() {
 }
 
 function makeSocket() {
-  socket = new WebSocket("wss://djs.chilly.blue/sudoku/" + (window.location.pathname.slice(1) || 1))
+  let result = new WebSocket("wss://djs.chilly.blue/sudoku/" + (window.location.pathname.slice(1) || 1))
   document.addEventListener("visibilitychange", checkSocket)
-  socket.addEventListener('message', socketOnMessage)
-  socket.addEventListener('open', socketOnOpen)
+  result.addEventListener('message', socketOnMessage)
+  result.addEventListener('open', socketOnOpen)
+  return result
 }
-
-makeSocket()
 
 function withSocket(Wrapped) {
   return class extends React.Component {
@@ -178,7 +177,7 @@ function withSocket(Wrapped) {
         game.difficulty = difficulty
       }
       this.setState(game)
-      makeSocket()
+      socket = makeSocket()
     }
 
     render() {
