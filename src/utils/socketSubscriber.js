@@ -178,7 +178,7 @@ function withSocket(Wrapped) {
         game.difficulty = difficulty
       }
       this.setState(game)
-      this.makeSocket()
+      makeSocket()
     }
 
     render() {
