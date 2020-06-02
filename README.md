@@ -1,4 +1,4 @@
-![Game preview](src/images/1.png){:height="50%" width="50%"}
+![Game preview](src/images/1.png)
 # Sudoku
 
 A multiplayer sudoku game game featuring pencil marks, puzzle generation, validation, and highlighting. Looking for contributors!
