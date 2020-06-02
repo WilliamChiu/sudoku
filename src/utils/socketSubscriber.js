@@ -176,8 +176,10 @@ function withSocket(Wrapped) {
         let difficulty = sudoku.ratepuzzle(generatedPuzzle, 20)
         game.difficulty = difficulty
       }
-      this.setState(game)
-      socket = makeSocket()
+      this.setState(game, () => {
+        this.sendBoard(this.state.board, this.state.difficulty)
+      })
+
     }
 
     render() {
