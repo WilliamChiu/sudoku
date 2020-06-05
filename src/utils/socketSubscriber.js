@@ -9,7 +9,7 @@ let entryToBoard = (square, i) => {
   let colOffset = square % 3 * 3
   row += rowOffset
   col += colOffset
-  return col * 9 + row
+  return row * 9 + col
 }
 
 function withSocket(Wrapped) {
